@@ -1,61 +1,48 @@
 import streamlit as st
 import pandas as pd
 
-# Set page configuration
+# Configure the page
 st.set_page_config(page_title="Fair Division Calculator", layout="wide")
 
 st.title("Fair Division Calculator")
-st.write(
-    """
-    Enter the item names and the corresponding valuations.
-    - **Items**: In the first column, enter the names of the items.
-    - **Valuations**: In the remaining columns, enter the valuations for each participant.
-    
-    For example, after entering your data you might have:
-    
-    | Items  | Alice | Bobs | Clare |
-    |--------|-------|------|-------|
-    | apple  | 10    | 20   | 30    |
-    | Pear   | 20    | 30   | 10    |
-    | Orange | 30    | 10   | 20    |
-    """
-)
+st.write("""
+Enter the names of the people and items below. When you're ready, click **Generate Table** 
+to create a spreadsheet-like input where:
+- The **first column** is for the item names.
+- The remaining columns use the people’s names as headers for entering valuations.
+""")
 
-# Sidebar: configure number of items and participants
-st.sidebar.header("Input Settings")
-num_items = st.sidebar.number_input("Number of Items", min_value=1, max_value=50, value=3, step=1)
-num_participants = st.sidebar.number_input("Number of Participants", min_value=1, max_value=20, value=3, step=1)
+# Input fields for header information
+people_input = st.text_input("Enter names of People (comma-separated)", "Alice, Bob, Clare")
+items_input = st.text_input("Enter names of Items (comma-separated)", "apple, pear, orange")
 
-# Create default participant names and column headers
-participant_names = [f"Participant {i+1}" for i in range(num_participants)]
-columns = ["Items"] + participant_names
+# Generate button to create the table
+if st.button("Generate Table"):
+    # Parse the comma-separated inputs into lists, stripping any extra whitespace
+    people_names = [name.strip() for name in people_input.split(",") if name.strip()]
+    items_names = [item.strip() for item in items_input.split(",") if item.strip()]
 
-# Build default data
-default_data = {
-    "Items": [f"Item {i+1}" for i in range(num_items)]
-}
-# Initialize valuation columns with default zeros
-for name in participant_names:
-    default_data[name] = [0] * num_items
-
-df_default = pd.DataFrame(default_data)
-
-st.subheader("Enter Items and Valuations")
-st.write("Fill in the table below. In the first column, enter the names of the items. In the remaining columns, enter the valuations for each participant.")
-# Use Streamlit's data editor to allow the user to modify the table
-edited_df = st.data_editor(df_default, use_container_width=True)
-
-if st.button("Process Data"):
-    # Validate that the items column has no empty names
-    if edited_df["Items"].isnull().any() or (edited_df["Items"] == "").any():
-        st.error("Please ensure all items have names.")
+    # Basic validation: ensure there is at least one person and one item
+    if not people_names or not items_names:
+        st.error("Please ensure you have entered at least one person and one item.")
     else:
-        st.write("### Processed Data")
-        st.write(edited_df)
+        # Prepare the DataFrame columns: the first column is "Items", followed by the people names
+        columns = ["Items"] + people_names
+
+        # Build the initial data:
+        # - The "Items" column is populated with the entered item names.
+        # - Each person column is initialized with a default value (0) for every item.
+        data = {"Items": items_names}
+        for person in people_names:
+            data[person] = [0] * len(items_names)
         
-        # At this point, you can integrate your fair division optimization logic.
-        # For example:
-        # results = my_fair_division_algorithm(edited_df)
-        # st.write("### Fair Division Results")
-        # st.write(results)
-        st.info("Fair division optimization algorithm goes here.")
+        df = pd.DataFrame(data, columns=columns)
+
+        st.subheader("Edit Valuations")
+        st.write("You can now edit the table below to input the valuations:")
+        # Display the DataFrame as an editable data editor table
+        edited_df = st.data_editor(df, use_container_width=True)
+        
+        # For debugging or further processing, you can display the resulting DataFrame:
+        st.write("### Current Data")
+        st.write(edited_df)
