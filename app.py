@@ -111,22 +111,36 @@ Then click **Generate Input Form** to enter data for each item:
 - For each person, their valuation (numeric spinner)
 """)
 
-# Header inputs for people and items.
-people_input = st.text_input("Enter names of People (comma-separated)", "Alice, Bob, Clare")
-items_input  = st.text_input("Enter names of Items (comma-separated)", "apple, pear, orange")
+# Initialize session state to store header info.
+if "input_form_generated" not in st.session_state:
+    st.session_state.input_form_generated = False
+if "people_names" not in st.session_state:
+    st.session_state.people_names = []
+if "item_names" not in st.session_state:
+    st.session_state.item_names = []
 
-# Parse the comma-separated strings.
-people_names = [name.strip() for name in people_input.split(",") if name.strip()]
-item_names   = [item.strip() for item in items_input.split(",") if item.strip()]
-num_people   = len(people_names)
-num_items    = len(item_names)
-
-if st.button("Generate Input Form"):
-    # Use a form to collect valuation data for each item.
+# Header input section.
+if not st.session_state.input_form_generated:
+    people_input = st.text_input("Enter names of People (comma-separated)", "Alice, Bob, Clare")
+    items_input  = st.text_input("Enter names of Items (comma-separated)", "apple, pear, orange")
+    
+    if st.button("Generate Input Form"):
+        st.session_state.people_names = [name.strip() for name in people_input.split(",") if name.strip()]
+        st.session_state.item_names   = [item.strip() for item in items_input.split(",") if item.strip()]
+        st.session_state.input_form_generated = True
+        st.experimental_rerun()
+else:
+    # Retrieve names from session state.
+    people_names = st.session_state.people_names
+    item_names   = st.session_state.item_names
+    num_people   = len(people_names)
+    num_items    = len(item_names)
+    
+    # Display the input form for valuations.
     with st.form("item_form"):
         st.write("Enter valuation data for each item:")
         divisible_flags = []
-        # valuations[(i, j)] stores the valuation for item i by person j.
+        # valuations[(i, j)] will store the valuation for item i by person j.
         valuations = {}
         for i in range(num_items):
             st.markdown(f"#### {item_names[i]}")
@@ -139,7 +153,7 @@ if st.button("Generate Input Form"):
                 valuation = st.number_input(f"Valuation for **{person}** for **{item_names[i]}**", 
                                             min_value=0, value=0, step=1, key=f"valuation_{i}_{j}")
                 valuations[(i, j)] = valuation
-
+        
         submitted = st.form_submit_button("Submit Data")
         if submitted:
             # Build separate matrices for indivisible and divisible items.
