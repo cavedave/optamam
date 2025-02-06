@@ -105,39 +105,38 @@ def solve_fair_division_mixed(indivisible_matrix, divisible_matrix, scale=100):
 st.title("Fair Division Calculator - Mixed Items (Numeric Inputs)")
 
 st.write("""
-Enter the names of the people (comma-separated) and the number of items.
+Enter the names of the people (comma-separated) and the names of the items (comma-separated).
 Then click **Generate Input Form** to enter data for each item:
-- **Item Name**  
 - **Divisible Flag** (enter 1 if the item is divisible, 0 if not)  
 - For each person, their valuation (numeric spinner)
 """)
 
-# Header inputs
+# Header inputs for people and items.
 people_input = st.text_input("Enter names of People (comma-separated)", "Alice, Bob, Clare")
+items_input  = st.text_input("Enter names of Items (comma-separated)", "apple, pear, orange")
+
+# Parse the comma-separated strings.
 people_names = [name.strip() for name in people_input.split(",") if name.strip()]
-num_people = len(people_names)
-num_items = st.number_input("Number of Items", min_value=1, value=3, step=1)
+item_names   = [item.strip() for item in items_input.split(",") if item.strip()]
+num_people   = len(people_names)
+num_items    = len(item_names)
 
 if st.button("Generate Input Form"):
-    # Use a form to collect item details.
+    # Use a form to collect valuation data for each item.
     with st.form("item_form"):
-        st.write("Enter details for each item:")
-        item_names = []
+        st.write("Enter valuation data for each item:")
         divisible_flags = []
-        # valuations[(i, j)] will store the valuation for item i by person j.
+        # valuations[(i, j)] stores the valuation for item i by person j.
         valuations = {}
         for i in range(num_items):
-            st.markdown(f"#### Item {i+1}")
-            # Text input for item name.
-            item_name = st.text_input(f"Name for Item {i+1}", value=f"Item {i+1}", key=f"item_name_{i}")
+            st.markdown(f"#### {item_names[i]}")
             # Numeric spinner for divisible flag.
-            divisible = st.number_input(f"Divisible for Item {i+1} (1 if yes, 0 if no)", 
+            divisible = st.number_input(f"Divisible for **{item_names[i]}** (1 if yes, 0 if no)", 
                                         min_value=0, max_value=1, value=0, step=1, key=f"divisible_{i}")
-            item_names.append(item_name)
             divisible_flags.append(divisible)
             # For each person, add a numeric spinner for their valuation.
             for j, person in enumerate(people_names):
-                valuation = st.number_input(f"Valuation for **{person}** for Item {i+1}", 
+                valuation = st.number_input(f"Valuation for **{person}** for **{item_names[i]}**", 
                                             min_value=0, value=0, step=1, key=f"valuation_{i}_{j}")
                 valuations[(i, j)] = valuation
 
