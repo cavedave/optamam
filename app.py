@@ -100,109 +100,98 @@ def solve_fair_division_mixed(indivisible_matrix, divisible_matrix, scale=100):
         return None, None
 
 # ---------------------------
-# Streamlit Web Form & Integration
+# Streamlit Web Form with Numeric Input Spinners
 # ---------------------------
-st.title("Fair Division Calculator - Mixed Items")
+st.title("Fair Division Calculator - Mixed Items (Numeric Inputs)")
+
 st.write("""
-Enter the names of the people and items below. Then edit the table to fill in each person's valuation for each item.
-- The **first column** (Items) is used to enter item names.
-- The **second column** (Divisible) is used to indicate if the item is divisible (enter 1 for divisible, 0 for non divisible).
-- The remaining columns correspond to each person's valuation of the item.
+Enter the names of the people (comma-separated) and the number of items.
+Then click **Generate Input Form** to enter data for each item:
+- **Item Name**  
+- **Divisible Flag** (enter 1 if the item is divisible, 0 if not)  
+- For each person, their valuation (numeric spinner)
 """)
 
-# Initialize session state for table generation.
-if 'table_generated' not in st.session_state:
-    st.session_state.table_generated = False
-if 'df' not in st.session_state:
-    st.session_state.df = None
+# Header inputs
+people_input = st.text_input("Enter names of People (comma-separated)", "Alice, Bob, Clare")
+people_names = [name.strip() for name in people_input.split(",") if name.strip()]
+num_people = len(people_names)
+num_items = st.number_input("Number of Items", min_value=1, value=3, step=1)
 
-# Header inputs: if table not yet generated.
-if not st.session_state.table_generated:
-    people_input = st.text_input("Enter names of People (comma-separated)", "Alice, Bob, Clare")
-    items_input = st.text_input("Enter names of Items (comma-separated)", "apple, pear, orange")
-    if st.button("Generate Table"):
-        people_names = [name.strip() for name in people_input.split(",") if name.strip()]
-        items_names  = [item.strip() for item in items_input.split(",") if item.strip()]
-        if not people_names or not items_names:
-            st.error("Please ensure you have at least one person and one item.")
-        else:
-            # Create a DataFrame with columns: Items, Divisible, then one column per person.
-            columns = ["Items", "Divisible"] + people_names
-            data = {"Items": items_names,
-                    "Divisible": [0] * len(items_names)}
-            for person in people_names:
-                data[person] = [0] * len(items_names)
-            df = pd.DataFrame(data, columns=columns)
-            st.session_state.df = df
-            st.session_state.table_generated = True
-            if hasattr(st, "experimental_rerun"):
-                st.experimental_rerun()
+if st.button("Generate Input Form"):
+    # Use a form to collect item details.
+    with st.form("item_form"):
+        st.write("Enter details for each item:")
+        item_names = []
+        divisible_flags = []
+        # valuations[(i, j)] will store the valuation for item i by person j.
+        valuations = {}
+        for i in range(num_items):
+            st.markdown(f"#### Item {i+1}")
+            # Text input for item name.
+            item_name = st.text_input(f"Name for Item {i+1}", value=f"Item {i+1}", key=f"item_name_{i}")
+            # Numeric spinner for divisible flag.
+            divisible = st.number_input(f"Divisible for Item {i+1} (1 if yes, 0 if no)", 
+                                        min_value=0, max_value=1, value=0, step=1, key=f"divisible_{i}")
+            item_names.append(item_name)
+            divisible_flags.append(divisible)
+            # For each person, add a numeric spinner for their valuation.
+            for j, person in enumerate(people_names):
+                valuation = st.number_input(f"Valuation for **{person}** for Item {i+1}", 
+                                            min_value=0, value=0, step=1, key=f"valuation_{i}_{j}")
+                valuations[(i, j)] = valuation
 
-# Show the data editor once the table is generated.
-if st.session_state.table_generated:
-    st.subheader("Edit Valuations")
-    edited_df = st.data_editor(st.session_state.df, use_container_width=True)
-    st.session_state.df = edited_df
-    st.write("### Current Table")
-    st.write(edited_df)
-    
-    if st.button("Solve Optimization"):
-        # The table columns:
-        #   Column 0: Items, Column 1: Divisible, Columns 2+ are valuations for each person.
-        df_val = edited_df.iloc[:, 2:]
-        divisible_flags = edited_df["Divisible"]
-        item_names = edited_df["Items"]
-        
-        # Separate the rows into indivisible and divisible items.
-        indivisible_mask = (divisible_flags != 1)
-        divisible_mask   = (divisible_flags == 1)
-        
-        indivisible_valuation_data = df_val[indivisible_mask]
-        indivisible_item_names   = item_names[indivisible_mask]
-        divisible_valuation_data   = df_val[divisible_mask]
-        divisible_item_names     = item_names[divisible_mask]
-        
-        # Convert the valuation data to matrices.
-        try:
-            indivisible_matrix = (indivisible_valuation_data.T.astype(int).values.tolist()
-                                  if not indivisible_valuation_data.empty else [])
-        except Exception as e:
-            st.error("Error converting indivisible valuations to integers: " + str(e))
-            indivisible_matrix = None
-        
-        try:
-            divisible_matrix = (divisible_valuation_data.T.astype(int).values.tolist()
-                                if not divisible_valuation_data.empty else [])
-        except Exception as e:
-            st.error("Error converting divisible valuations to integers: " + str(e))
-            divisible_matrix = None
-        
-        if (indivisible_matrix is None or divisible_matrix is None) and not (indivisible_matrix or divisible_matrix):
-            st.error("No valid valuation data found.")
-        else:
-            # If one type is missing, replace with an empty list.
-            if indivisible_matrix is None:
+        submitted = st.form_submit_button("Submit Data")
+        if submitted:
+            # Build separate matrices for indivisible and divisible items.
+            indivisible_valuations = []
+            divisible_valuations = []
+            indivisible_item_names = []
+            divisible_item_names = []
+            for i in range(num_items):
+                # Build the row for this item: one value per person.
+                row = [valuations[(i, j)] for j in range(num_people)]
+                if divisible_flags[i] == 1:
+                    divisible_valuations.append(row)
+                    divisible_item_names.append(item_names[i])
+                else:
+                    indivisible_valuations.append(row)
+                    indivisible_item_names.append(item_names[i])
+            
+            # Transpose the matrices so that rows correspond to people.
+            if indivisible_valuations:
+                indivisible_matrix = list(map(list, zip(*indivisible_valuations)))
+            else:
                 indivisible_matrix = []
-            if divisible_matrix is None:
+            if divisible_valuations:
+                divisible_matrix = list(map(list, zip(*divisible_valuations)))
+            else:
                 divisible_matrix = []
+            
+            st.write("### Input Data")
+            if indivisible_matrix:
+                st.write("**Indivisible Items:**")
+                st.write(pd.DataFrame(indivisible_matrix, index=people_names, columns=indivisible_item_names))
+            else:
+                st.write("No indivisible items.")
+            if divisible_matrix:
+                st.write("**Divisible Items:**")
+                st.write(pd.DataFrame(divisible_matrix, index=people_names, columns=divisible_item_names))
+            else:
+                st.write("No divisible items.")
+            
+            # Run the optimization model.
             allocation, worst_val = solve_fair_division_mixed(indivisible_matrix, divisible_matrix, scale=100)
             if allocation is not None:
                 st.write("## Optimization Result")
-                st.write("Worst satisfaction value (scaled):", worst_val)
-                st.write("### Allocation")
-                result_md = ""
-                people_names_list = list(df_val.columns)  # names of people from the valuation columns
-                for i, person in enumerate(people_names_list):
-                    result_md += f"**{person}**\n"
+                worst_percent = worst_val / 100  # Convert scaled value to percentage
+                st.write(f"Worst satisfaction value (percentage): {worst_percent:.1f}%")
+                st.write("### Allocation:")
+                for i, person in enumerate(people_names):
+                    st.write(f"**{person}**:")
                     if 'indivisible' in allocation[i]:
-                        # Build a table for indivisible items.
-                        df_indiv = pd.DataFrame({indivisible_item_names.iloc[k]: [allocation[i]['indivisible'][k]]
-                                                  for k in range(len(allocation[i]['indivisible']))})
-                        result_md += "Indivisible Items:\n" + df_indiv.to_markdown() + "\n"
+                        st.write("Indivisible Allocation:", allocation[i]['indivisible'])
                     if 'divisible' in allocation[i]:
-                        df_div = pd.DataFrame({divisible_item_names.iloc[k]: [allocation[i]['divisible'][k]]
-                                                for k in range(len(allocation[i]['divisible']))})
-                        result_md += "Divisible Items:\n" + df_div.to_markdown() + "\n"
-                st.markdown(result_md)
+                        st.write("Divisible Allocation:", allocation[i]['divisible'])
             else:
                 st.error("No solution found.")
