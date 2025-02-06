@@ -2,3 +2,4 @@ streamlit>=1.42.0
 pandas>=1.5.3
 numpy>=1.24.2
 ortools
+tabulate>=0.8.9
