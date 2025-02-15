@@ -116,7 +116,6 @@ page = st.sidebar.radio("Navigation", ["Header", "Valuation Input"],
                           index=0 if st.session_state.page == "Header" else 1)
 st.session_state.page = page
 
-
 if page == "Header":
     st.title("Fair Division Calculator")
     st.write("Welcome! This app helps you fairly divide items among people based on their valuations.")
@@ -136,13 +135,12 @@ if page == "Header":
         st.session_state.people_names = [name.strip() for name in people_input.split(",") if name.strip()]
         st.session_state.item_names = [item.strip() for item in items_input.split(",") if item.strip()]
         st.session_state.page = "Valuation Input"
-        # Instead of st.experimental_rerun(), use a flag to force a re-render
-        st.session_state.force_rerun = True
+        st.session_state.force_rerun = True  # Flag to force re-render
 
-# Add a flag to force a re-render
-if st.session_state.get("force_rerun", False):
-    st.session_state.force_rerun = False
-    st.write("Input form generated. Use the navigation sidebar to switch pages.")
+    # Add a flag to force a re-render
+    if st.session_state.get("force_rerun", False):
+        st.session_state.force_rerun = False
+        st.write("Input form generated. Use the navigation sidebar to switch pages.")
 
 elif page == "Valuation Input":
     st.title("Fair Division Calculator - Valuation Input")
@@ -176,73 +174,75 @@ elif page == "Valuation Input":
                         )
                         valuations[(i, j)] = valuation
             submitted = st.form_submit_button("Submit Data")
-            if submitted:
-                # Build separate matrices for indivisible and divisible items.
-                indivisible_valuations = []
-                divisible_valuations = []
-                indivisible_item_names = []
-                divisible_item_names = []
-                for i in range(num_items):
-                    # Build the row for this item: one value per person.
-                    row = [valuations[(i, j)] for j in range(num_people)]
-                    if divisible_flags[i] == 1:
-                        divisible_valuations.append(row)
-                        divisible_item_names.append(item_names[i])
-                    else:
-                        indivisible_valuations.append(row)
-                        indivisible_item_names.append(item_names[i])
-                
-                # Transpose the matrices so that rows correspond to people.
-                if indivisible_valuations:
-                    indivisible_matrix = list(map(list, zip(*indivisible_valuations)))
+        
+        # Move the results and download button outside the form
+        if submitted:
+            # Build separate matrices for indivisible and divisible items.
+            indivisible_valuations = []
+            divisible_valuations = []
+            indivisible_item_names = []
+            divisible_item_names = []
+            for i in range(num_items):
+                # Build the row for this item: one value per person.
+                row = [valuations[(i, j)] for j in range(num_people)]
+                if divisible_flags[i] == 1:
+                    divisible_valuations.append(row)
+                    divisible_item_names.append(item_names[i])
                 else:
-                    indivisible_matrix = []
-                if divisible_valuations:
-                    divisible_matrix = list(map(list, zip(*divisible_valuations)))
-                else:
-                    divisible_matrix = []
-                
-                st.write("### Input Data")
-                if indivisible_matrix:
-                    st.write("**Indivisible Items:**")
-                    st.write(pd.DataFrame(indivisible_matrix, index=people_names, columns=indivisible_item_names))
-                else:
-                    st.write("No indivisible items.")
-                if divisible_matrix:
-                    st.write("**Divisible Items:**")
-                    st.write(pd.DataFrame(divisible_matrix, index=people_names, columns=divisible_item_names))
-                else:
-                    st.write("No divisible items.")
-                
-                # Run the optimization model.
-                allocation, worst_val = solve_fair_division_mixed(indivisible_matrix, divisible_matrix, scale=100)
-                if allocation is not None:
-                    worst_percent = worst_val / 100  # Convert scaled value to percentage
-                    st.success("Optimization completed successfully!")
-                    st.write(f"**Worst satisfaction value (percentage):** {worst_percent:.1f}%")
-                    st.write("### Allocation:")
+                    indivisible_valuations.append(row)
+                    indivisible_item_names.append(item_names[i])
+            
+            # Transpose the matrices so that rows correspond to people.
+            if indivisible_valuations:
+                indivisible_matrix = list(map(list, zip(*indivisible_valuations)))
+            else:
+                indivisible_matrix = []
+            if divisible_valuations:
+                divisible_matrix = list(map(list, zip(*divisible_valuations)))
+            else:
+                divisible_matrix = []
+            
+            st.write("### Input Data")
+            if indivisible_matrix:
+                st.write("**Indivisible Items:**")
+                st.write(pd.DataFrame(indivisible_matrix, index=people_names, columns=indivisible_item_names))
+            else:
+                st.write("No indivisible items.")
+            if divisible_matrix:
+                st.write("**Divisible Items:**")
+                st.write(pd.DataFrame(divisible_matrix, index=people_names, columns=divisible_item_names))
+            else:
+                st.write("No divisible items.")
+            
+            # Run the optimization model.
+            allocation, worst_val = solve_fair_division_mixed(indivisible_matrix, divisible_matrix, scale=100)
+            if allocation is not None:
+                worst_percent = worst_val / 100  # Convert scaled value to percentage
+                st.success("Optimization completed successfully!")
+                st.write(f"**Worst satisfaction value (percentage):** {worst_percent:.1f}%")
+                st.write("### Allocation:")
 
-                    # Create a DataFrame for the allocation results
-                    allocation_data = []
-                    for i, person in enumerate(people_names):
-                        indivisible_allocation = allocation[i].get('indivisible', [])
-                        divisible_allocation = allocation[i].get('divisible', [])
-                        allocation_data.append({
-                            "Person": person,
-                            "Indivisible Allocation": ", ".join([item_names[j] for j, val in enumerate(indivisible_allocation) if val == 1]),
-                            "Divisible Allocation": ", ".join([f"{item_names[j]}: {val*100:.1f}%" for j, val in enumerate(divisible_allocation)])
-                        })
+                # Create a DataFrame for the allocation results
+                allocation_data = []
+                for i, person in enumerate(people_names):
+                    indivisible_allocation = allocation[i].get('indivisible', [])
+                    divisible_allocation = allocation[i].get('divisible', [])
+                    allocation_data.append({
+                        "Person": person,
+                        "Indivisible Allocation": ", ".join([item_names[j] for j, val in enumerate(indivisible_allocation) if val == 1]),
+                        "Divisible Allocation": ", ".join([f"{item_names[j]}: {val*100:.1f}%" for j, val in enumerate(divisible_allocation)])
+                    })
 
-                    allocation_df = pd.DataFrame(allocation_data)
-                    st.table(allocation_df)
+                allocation_df = pd.DataFrame(allocation_data)
+                st.table(allocation_df)
 
-                    # Add a download button for the results
-                    csv = allocation_df.to_csv(index=False).encode('utf-8')
-                    st.download_button(
-                        label="Download Results as CSV",
-                        data=csv,
-                        file_name="fair_division_results.csv",
-                        mime="text/csv"
-                    )
-                else:
-                    st.error("No solution found.")
+                # Add a download button for the results (outside the form)
+                csv = allocation_df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="Download Results as CSV",
+                    data=csv,
+                    file_name="fair_division_results.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.error("No solution found.")
