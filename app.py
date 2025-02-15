@@ -117,7 +117,6 @@ page = st.sidebar.radio("Navigation", ["Header", "Valuation Input"],
 st.session_state.page = page
 
 
-Copy
 if page == "Header":
     st.title("Fair Division Calculator")
     st.write("Welcome! This app helps you fairly divide items among people based on their valuations.")
