@@ -116,6 +116,8 @@ page = st.sidebar.radio("Navigation", ["Header", "Valuation Input"],
                           index=0 if st.session_state.page == "Header" else 1)
 st.session_state.page = page
 
+
+Copy
 if page == "Header":
     st.title("Fair Division Calculator")
     st.write("Welcome! This app helps you fairly divide items among people based on their valuations.")
@@ -135,7 +137,13 @@ if page == "Header":
         st.session_state.people_names = [name.strip() for name in people_input.split(",") if name.strip()]
         st.session_state.item_names = [item.strip() for item in items_input.split(",") if item.strip()]
         st.session_state.page = "Valuation Input"
-        st.experimental_rerun()
+        # Instead of st.experimental_rerun(), use a flag to force a re-render
+        st.session_state.force_rerun = True
+
+# Add a flag to force a re-render
+if st.session_state.get("force_rerun", False):
+    st.session_state.force_rerun = False
+    st.write("Input form generated. Use the navigation sidebar to switch pages.")
 
 elif page == "Valuation Input":
     st.title("Fair Division Calculator - Valuation Input")
