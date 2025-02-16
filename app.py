@@ -37,6 +37,7 @@ def landing_page():
     st.header("Blog Posts")
     st.write("Coming soon! Stay tuned for insightful articles on fair division and related topics.")
 
+    st.markdown("[My First Blog Post](https://optamam.com/blog/my-first-blog-post.html)")
 # Initialize session state for page navigation
 if "page" not in st.session_state:
     st.session_state.page = "Landing Page"
