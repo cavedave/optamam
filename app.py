@@ -8,6 +8,9 @@ def landing_page():
     # Section 1: Calculators
     st.header("Calculators")
     if st.button("Fair Division Calculator"):
+        # Initialize session state variables for the calculator
+        st.session_state.people_names = []
+        st.session_state.item_names = []
         st.session_state.page = "Fair Division Calculator"
         st.rerun()  # Refresh the app to navigate to the calculator
 
