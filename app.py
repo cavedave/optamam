@@ -1,5 +1,24 @@
 import streamlit as st
 
+# Custom CSS to hide the running man and hamburger menu
+hide_streamlit_style = """
+    <style>
+        /* Hide the running man loading icon */
+        div.stSpinner > div {
+            display: none;
+        }
+        /* Hide the hamburger menu */
+        #MainMenu {
+            visibility: hidden;
+        }
+        /* Hide the footer */
+        footer {
+            visibility: hidden;
+        }
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # Landing Page
 def landing_page():
     st.title("Welcome to the Fair Division App!")
