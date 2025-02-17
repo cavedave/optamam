@@ -54,6 +54,9 @@ def landing_page():
     st.sidebar.title("Blog Posts")
     selected_post = st.sidebar.selectbox("Choose a post", list(BLOG_POSTS.keys()))
 
+# Link to the Markdown file
+    st.markdown("[Read My First Blog Post](first.md)")
+
     # Display the selected blog post
     st.title(selected_post)
     post_content = load_blog_post(BLOG_POSTS[selected_post])
