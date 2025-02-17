@@ -19,6 +19,20 @@ hide_streamlit_style = """
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
+
+# List of blog posts
+BLOG_POSTS = {
+    "My First Blog Post": "blog/first.md",
+    "Another Blog Post": "blog/second.md",
+}
+
+def load_blog_post(post_path):
+    """Load a blog post from a Markdown file."""
+    with open(post_path, "r", encoding="utf-8") as file:
+        return file.read()
+
+
+
 # Landing Page
 def landing_page():
     st.title("Welcome to the Fair Division App!")
@@ -36,7 +50,14 @@ def landing_page():
     # Section 2: Blog Posts
     st.header("Blog Posts")
     st.write("Coming soon! Stay tuned for insightful articles on fair division and related topics.")
+# Sidebar for navigation
+    st.sidebar.title("Blog Posts")
+    selected_post = st.sidebar.selectbox("Choose a post", list(BLOG_POSTS.keys()))
 
+    # Display the selected blog post
+    st.title(selected_post)
+    post_content = load_blog_post(BLOG_POSTS[selected_post])
+    st.markdown(post_content)    
     st.markdown("[My First Blog Post](https://optamam-18b97cb6d0b0.herokuapp.com/blog/my-first-blog-post.html)")
 # Initialize session state for page navigation
 if "page" not in st.session_state:
@@ -49,3 +70,5 @@ elif st.session_state.page == "Fair Division Calculator":
     # Import the fair division calculator code here
     from fair_division_calculator import fair_division_calculator
     fair_division_calculator()
+
+
