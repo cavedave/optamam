@@ -1,0 +1,46 @@
+/* General styles */
+body {
+    background-color: #f8f9fa;
+}
+
+.container {
+    max-width: 1200px;
+}
+
+/* Card styles */
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Form styles */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.input-group {
+    margin-bottom: 0.5rem;
+}
+
+/* Button styles */
+.btn {
+    margin-right: 0.5rem;
+}
+
+/* Table styles */
+.table {
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Results section */
+#results-section {
+    margin-top: 2rem;
+}
+
+.alert {
+    margin-bottom: 1rem;
+} 
