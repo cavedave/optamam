@@ -134,6 +134,16 @@ def solve_fair_division_mixed(indivisible_matrix: List[List[int]],
                 model.Add(sum(divisible_vars[i, j] for i in range(num_people)) == scale)
             logger.info("Added constraints for divisible items")
         
+        # Calculate total possible value for each person
+        total_possible_values = []
+        for i in range(num_people):
+            total_value = 0
+            if num_indivisible > 0:
+                total_value += sum(int(indivisible_matrix[i][j]) for j in range(num_indivisible))
+            if num_divisible > 0:
+                total_value += sum(int(divisible_matrix[i][j]) for j in range(num_divisible))
+            total_possible_values.append(total_value)
+        
         # Calculate satisfaction for each person
         satisfactions = []
         for i in range(num_people):
@@ -158,18 +168,14 @@ def solve_fair_division_mixed(indivisible_matrix: List[List[int]],
             logger.info(f"Person {i} satisfaction expression created")
         
         # Calculate maximum possible satisfaction for scaling
-        max_possible = 0
-        if indivisible_matrix:
-            max_possible += sum(max(int(row[j]) for j in range(len(row))) for row in indivisible_matrix)
-        if divisible_matrix:
-            max_possible += sum(max(int(row[j]) for j in range(len(row))) for row in divisible_matrix) * scale
-        
+        max_possible = max(total_possible_values) * scale
         logger.info(f"Maximum possible satisfaction: {max_possible}")
         
-        # Maximize the minimum satisfaction
+        # Maximize the minimum satisfaction percentage
         min_satisfaction = model.NewIntVar(0, int(max_possible), 'min_satisfaction')
-        for satisfaction in satisfactions:
-            model.Add(min_satisfaction <= satisfaction)
+        for i, satisfaction in enumerate(satisfactions):
+            # Instead of division, multiply both sides by total_possible_values[i]
+            model.Add(min_satisfaction * total_possible_values[i] <= satisfaction * scale)
         model.Maximize(min_satisfaction)
         logger.info("Added objective function")
         
@@ -206,8 +212,15 @@ def solve_fair_division_mixed(indivisible_matrix: List[List[int]],
                 
                 allocation[i] = person_allocation
             
-            worst_satisfaction = solver.Value(min_satisfaction)
-            logger.info(f"Solution found with worst satisfaction: {worst_satisfaction/100}")
+            # Calculate actual satisfaction percentages
+            actual_satisfactions = []
+            for i, satisfaction in enumerate(satisfactions):
+                actual_value = solver.Value(satisfaction)
+                percentage = (actual_value * 100) / (total_possible_values[i] * scale)
+                actual_satisfactions.append(percentage)
+            
+            worst_satisfaction = min(actual_satisfactions)
+            logger.info(f"Solution found with worst satisfaction: {worst_satisfaction}%")
             logger.info("=== Fair Division Solver Complete ===")
             return allocation, worst_satisfaction
         else:

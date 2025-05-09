@@ -241,7 +241,7 @@ function displayResults(result) {
 
 function downloadResults() {
     // Create CSV content
-    let csvContent = 'Person,Indivisible Items,Divisible Items\n';
+    let csvContent = 'Person,Indivisible Items,Divisible Items,Valuations\n';
     
     const resultsDiv = document.getElementById('results-content');
     const table = resultsDiv.querySelector('table');
@@ -249,7 +249,15 @@ function downloadResults() {
     
     rows.forEach(row => {
         const cells = row.querySelectorAll('td');
-        csvContent += `${cells[0].textContent},"${cells[1].textContent}","${cells[2].textContent}"\n`;
+        const person = cells[0].textContent;
+        
+        // Get valuations for this person
+        const personValuations = [];
+        itemNames.forEach(item => {
+            personValuations.push(`${item}: ${valuations[item][person]}`);
+        });
+        
+        csvContent += `${cells[0].textContent},"${cells[1].textContent}","${cells[2].textContent}","${personValuations.join('; ')}"\n`;
     });
     
     // Create and trigger download
