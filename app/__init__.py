@@ -1,0 +1,3 @@
+"""
+Fair Division Calculator package.
+""" 

@@ -4,6 +4,24 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# TODO: Potential improvements to the fair division solver:
+# 1. Better variable creation using dictionary comprehensions
+#    - Replace nested loops with dictionary comprehensions for variable creation
+#    - Makes code more concise and readable
+#
+# 2. More precise satisfaction calculation with proper scaling
+#    - Improve how divisible items (like cash) are handled
+#    - Ensure proper scaling of values
+#
+# 3. Improved constraints for divisible items using AddDivisionEquality
+#    - Use AddDivisionEquality for better handling of divisible items
+#    - Ensures fair splitting of divisible resources
+#
+# 4. Better satisfaction constraints with bounded variables
+#    - Create bounded variables for total satisfaction
+#    - Make solver's job easier by providing exact ranges
+#    - Improve efficiency in finding solutions
+
 def calculate_fair_division(items: List[Dict], people: List[str], valuations: Dict[str, Dict[str, float]]) -> Dict:
     """
     Calculate fair division for a list of items and people with their valuations.
@@ -17,6 +35,12 @@ def calculate_fair_division(items: List[Dict], people: List[str], valuations: Di
         Dictionary containing the allocation and worst satisfaction value
     """
     try:
+        # Validate that valuations sum to 100 for each person
+        for person in people:
+            total_value = sum(valuations[item['name']][person] for item in items)
+            if abs(total_value - 100) > 0.01:  # Allow for small floating point differences
+                raise ValueError(f"Valuations for {person} must sum to 100, but sum to {total_value:.2f}")
+        
         # Separate divisible and indivisible items
         divisible_items = [item for item in items if item['is_divisible']]
         indivisible_items = [item for item in items if not item['is_divisible']]
@@ -45,7 +69,7 @@ def calculate_fair_division(items: List[Dict], people: List[str], valuations: Di
         # Convert allocation to the expected format
         result = {
             'allocations': {},
-            'worst_satisfaction': worst_satisfaction / 100  # Convert to percentage
+            'worst_satisfaction': worst_satisfaction  # Already a percentage
         }
         
         # Convert numeric indices to names
@@ -96,87 +120,91 @@ def solve_fair_division_mixed(indivisible_matrix: List[List[int]],
             logger.error("Both matrices are empty")
             return None, None
 
+        # Convert float values to integers
+        indivisible_matrix = [[int(val) for val in row] for row in indivisible_matrix]
+        divisible_matrix = [[int(val) for val in row] for row in divisible_matrix]
+
         # Get dimensions
         num_people = len(indivisible_matrix) if indivisible_matrix else len(divisible_matrix)
         num_indivisible = len(indivisible_matrix[0]) if indivisible_matrix else 0
         num_divisible = len(divisible_matrix[0]) if divisible_matrix else 0
 
         logger.info(f"Problem size: {num_people} people, {num_indivisible} indivisible items, {num_divisible} divisible items")
+        
+        # Log the input matrices
+        if indivisible_matrix:
+            logger.info("Indivisible matrix:")
+            for i, row in enumerate(indivisible_matrix):
+                logger.info(f"Person {i}: {row}")
+        
+        if divisible_matrix:
+            logger.info("Divisible matrix:")
+            for i, row in enumerate(divisible_matrix):
+                logger.info(f"Person {i}: {row}")
 
         model = cp_model.CpModel()
         logger.info("Created CP model")
         
-        # Create variables for indivisible items
-        indivisible_vars = {}
-        if num_indivisible > 0:
-            for i in range(num_people):
-                for j in range(num_indivisible):
-                    indivisible_vars[i, j] = model.NewBoolVar(f'indivisible_{i}_{j}')
-            logger.info(f"Created {len(indivisible_vars)} indivisible variables")
+        # Create variables for indivisible items using dictionary comprehension
+        indivisible_vars = {(i, j): model.NewBoolVar(f'indivisible_{i}_{j}')
+                           for i in range(num_people)
+                           for j in range(num_indivisible)}
+        logger.info(f"Created {len(indivisible_vars)} indivisible variables")
         
-        # Create variables for divisible items
-        divisible_vars = {}
-        if num_divisible > 0:
-            for i in range(num_people):
-                for j in range(num_divisible):
-                    divisible_vars[i, j] = model.NewIntVar(0, scale, f'divisible_{i}_{j}')
-            logger.info(f"Created {len(divisible_vars)} divisible variables")
+        # Create variables for divisible items using dictionary comprehension
+        divisible_vars = {(i, j): model.NewIntVar(0, scale, f'divisible_{i}_{j}')
+                         for i in range(num_people)
+                         for j in range(num_divisible)}
+        logger.info(f"Created {len(divisible_vars)} divisible variables")
         
         # Each indivisible item must be assigned to exactly one person
-        if num_indivisible > 0:
-            for j in range(num_indivisible):
-                model.Add(sum(indivisible_vars[i, j] for i in range(num_people)) == 1)
-            logger.info("Added constraints for indivisible items")
+        for j in range(num_indivisible):
+            model.Add(sum(indivisible_vars[i, j] for i in range(num_people)) == 1)
+        logger.info("Added constraints for indivisible items")
         
         # Each divisible item must be fully allocated
-        if num_divisible > 0:
-            for j in range(num_divisible):
-                model.Add(sum(divisible_vars[i, j] for i in range(num_people)) == scale)
-            logger.info("Added constraints for divisible items")
-        
-        # Calculate total possible value for each person
-        total_possible_values = []
+        for j in range(num_divisible):
+            model.Add(sum(divisible_vars[i, j] for i in range(num_people)) == scale)
+        logger.info("Added constraints for divisible items")
+
+        # Determine max possible satisfaction to bound worst
+        max_possible = max(
+            sum(indivisible_matrix[i]) + sum(divisible_matrix[i]) if divisible_matrix else sum(indivisible_matrix[i])
+            for i in range(num_people)
+        )
+        worst_satisfaction = model.NewIntVar(0, int(max_possible), 'worst_satisfaction')
+        logger.info(f"Created worst satisfaction variable with max possible value: {max_possible}")
+
+        # Build per-person satisfaction constraints
         for i in range(num_people):
-            total_value = 0
-            if num_indivisible > 0:
-                total_value += sum(int(indivisible_matrix[i][j]) for j in range(num_indivisible))
-            if num_divisible > 0:
-                total_value += sum(int(divisible_matrix[i][j]) for j in range(num_divisible))
-            total_possible_values.append(total_value)
-        
-        # Calculate satisfaction for each person
-        satisfactions = []
-        for i in range(num_people):
-            # Handle indivisible items
-            indivisible_satisfaction = 0
-            if num_indivisible > 0:
-                indivisible_satisfaction = sum(
-                    int(indivisible_matrix[i][j]) * indivisible_vars[i, j]
-                    for j in range(num_indivisible)
-                )
+            # Create bounded variable for total satisfaction
+            tot = model.NewIntVar(
+                0,
+                int(sum(indivisible_matrix[i]) + (max(max(row) for row in divisible_matrix) if divisible_matrix else 0)),
+                f'tot_{i}'
+            )
             
-            # Handle divisible items
-            divisible_satisfaction = 0
-            if num_divisible > 0:
-                divisible_satisfaction = sum(
-                    int(divisible_matrix[i][j]) * divisible_vars[i, j]
-                    for j in range(num_divisible)
-                )
+            # Calculate indivisible satisfaction
+            indiv_sum = sum(indivisible_matrix[i][j] * indivisible_vars[i, j]
+                          for j in range(num_indivisible))
             
-            total_satisfaction = indivisible_satisfaction + divisible_satisfaction
-            satisfactions.append(total_satisfaction)
-            logger.info(f"Person {i} satisfaction expression created")
-        
-        # Calculate maximum possible satisfaction for scaling
-        max_possible = max(total_possible_values) * scale
-        logger.info(f"Maximum possible satisfaction: {max_possible}")
-        
-        # Maximize the minimum satisfaction percentage
-        min_satisfaction = model.NewIntVar(0, int(max_possible), 'min_satisfaction')
-        for i, satisfaction in enumerate(satisfactions):
-            # Instead of division, multiply both sides by total_possible_values[i]
-            model.Add(min_satisfaction * total_possible_values[i] <= satisfaction * scale)
-        model.Maximize(min_satisfaction)
+            # Calculate divisible satisfaction with proper scaling
+            if num_divisible:
+                div_contrib = sum(divisible_matrix[i][j] * divisible_vars[i, j]
+                                for j in range(num_divisible))
+                scaled_div = model.NewIntVar(0, int(max(max(row) for row in divisible_matrix)),
+                                           f'scaled_div_{i}')
+                model.AddDivisionEquality(scaled_div, div_contrib, scale)
+            else:
+                scaled_div = 0
+
+            # Add constraints for total satisfaction
+            model.Add(tot == indiv_sum + scaled_div)
+            model.Add(tot >= worst_satisfaction)
+            logger.info(f"Added satisfaction constraints for person {i}")
+
+        # Maximize the worst satisfaction
+        model.Maximize(worst_satisfaction)
         logger.info("Added objective function")
         
         # Solve the model
@@ -189,6 +217,8 @@ def solve_fair_division_mixed(indivisible_matrix: List[List[int]],
         if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
             # Extract the solution
             allocation = {}
+            actual_satisfactions = []
+            
             for i in range(num_people):
                 person_allocation = {}
                 
@@ -211,16 +241,26 @@ def solve_fair_division_mixed(indivisible_matrix: List[List[int]],
                     logger.info(f"Person {i} divisible allocation: {divisible_allocation}")
                 
                 allocation[i] = person_allocation
-            
-            # Calculate actual satisfaction percentages
-            actual_satisfactions = []
-            for i, satisfaction in enumerate(satisfactions):
-                actual_value = solver.Value(satisfaction)
-                percentage = (actual_value * 100) / (total_possible_values[i] * scale)
-                actual_satisfactions.append(percentage)
+                
+                # Calculate actual satisfaction
+                received_value = 0
+                # Indivisible items
+                if num_indivisible > 0:
+                    for j in range(num_indivisible):
+                        if solver.Value(indivisible_vars[i, j]) == 1:
+                            received_value += int(indivisible_matrix[i][j])
+                            logger.info(f"Person {i} received indivisible item {j} with value {int(indivisible_matrix[i][j])}")
+                # Divisible items
+                if num_divisible > 0:
+                    for j in range(num_divisible):
+                        fraction = solver.Value(divisible_vars[i, j]) / scale
+                        received_value += int(divisible_matrix[i][j]) * fraction
+                        logger.info(f"Person {i} received divisible item {j} with fraction {fraction} and value {int(divisible_matrix[i][j])}")
+                actual_satisfactions.append(received_value)
+                logger.info(f"Person {i} actual satisfaction: {received_value:.2f}% (received {received_value} out of 100)")
             
             worst_satisfaction = min(actual_satisfactions)
-            logger.info(f"Solution found with worst satisfaction: {worst_satisfaction}%")
+            logger.info(f"Worst satisfaction: {worst_satisfaction:.2f}%")
             logger.info("=== Fair Division Solver Complete ===")
             return allocation, worst_satisfaction
         else:

@@ -51,6 +51,31 @@ function generateValuationForm() {
         divisibleFlags[item] = index === 0;  // First item is divisible by default
     });
     
+    // Create total value display for each person
+    const totalsDiv = document.createElement('div');
+    totalsDiv.className = 'row mb-3';
+    peopleNames.forEach(person => {
+        const col = document.createElement('div');
+        col.className = 'col-md-4';
+        const totalSpan = document.createElement('span');
+        totalSpan.id = `total-${person}`;
+        totalSpan.className = 'badge bg-info';
+        totalSpan.textContent = `Total for ${person}: 0`;
+        col.appendChild(totalSpan);
+        totalsDiv.appendChild(col);
+    });
+    formDiv.appendChild(totalsDiv);
+    
+    // Function to update totals
+    function updateTotals() {
+        peopleNames.forEach(person => {
+            const total = itemNames.reduce((sum, item) => sum + (valuations[item][person] || 0), 0);
+            const totalSpan = document.getElementById(`total-${person}`);
+            totalSpan.textContent = `Total for ${person}: ${total}`;
+            totalSpan.className = `badge ${total === 100 ? 'bg-success' : 'bg-warning'}`;
+        });
+    }
+    
     itemNames.forEach((item, itemIndex) => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'card mb-3';
@@ -103,9 +128,11 @@ function generateValuationForm() {
             input.type = 'number';
             input.className = 'form-control';
             input.min = '0';
+            input.max = '100';
             input.value = valuations[item][person];  // Use the initialized value
             input.onchange = (e) => {
-                valuations[item][person] = parseInt(e.target.value);
+                valuations[item][person] = parseInt(e.target.value) || 0;
+                updateTotals();
             };
             
             const label = document.createElement('span');
@@ -123,6 +150,9 @@ function generateValuationForm() {
         itemDiv.appendChild(cardBody);
         formDiv.appendChild(itemDiv);
     });
+    
+    // Initial update of totals
+    updateTotals();
 }
 
 async function calculateFairDivision() {
