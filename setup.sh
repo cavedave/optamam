@@ -1,13 +1,30 @@
-mkdir -p ~/.streamlit/
+#!/bin/bash
 
-echo "\
-[general]\n\
-email = \"david.curran@gmail.com\"\n\
-" > ~/.streamlit/credentials.toml
+# Create necessary directories
+mkdir -p logs
 
+# Set up logging
+echo "Setting up logging configuration..."
 echo "\
-[server]\n\
-headless = true\n\
-enableCORS=false\n\
-port = $PORT\n\
-" > ~/.streamlit/config.toml
+[loggers]
+keys=root
+
+[handlers]
+keys=consoleHandler
+
+[formatters]
+keys=simpleFormatter
+
+[logger_root]
+level=INFO
+handlers=consoleHandler
+
+[handler_consoleHandler]
+class=StreamHandler
+level=INFO
+formatter=simpleFormatter
+args=(sys.stdout,)
+
+[formatter_simpleFormatter]
+format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
+" > logging.conf
