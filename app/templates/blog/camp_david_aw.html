@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adjusted Winner & Camp David Accords – Fair Division Blog</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<style>
+    body {
+        font-size: 1.25rem;
+    }
+    .card, .container, .navbar, .table {
+        font-size: 1.1em;
+    }
+</style>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">Fair Division Calculator</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/calculator">Calculator</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/blog">Blog</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <article>
+            <h1>Applying Adjusted Winner to the Camp David Accords</h1>
+            <p class="text-muted">Posted on May 21, 2025</p>
+
+            <section class="mt-4">
+                <h2>Introduction</h2>
+                <p>
+                    Steven Brams and Alan D. Taylor's <a href="https://books.google.ie/books/about/The_Win_win_Solution.html?id=uDV6quSiSE4C&amp;redir_esc=y">The Win-Win Solution</a> presents the Adjusted Winner procedure, a fair division algorithm for two parties. While our site supports multi-party divisions, AW is specific to two. In AW, each person allocates points to issues summing to 100; initially each gets their top-valued items, and then the item with the lowest ratio of valuations is transferred to balance the total points.
+                </p>
+            </section>
+
+            <section class="mt-4">
+                <h2>Case Study: Egyptian–Israeli Dispute</h2>
+                <p>
+                    Brams & Taylor apply AW to the 30-year Egyptian–Israeli dispute resolved by the <a href="https://en.wikipedia.org/wiki/Camp_David_Accords">Camp David Accords of 1978</a> and the 1979 peace treaty. Below are the point allocations they propose:
+                </p>
+                <figure class="mb-4">
+                    <img src="/static/img/RatingsIP.png" alt="Ratings given" class="img-fluid rounded shadow">
+                    <figcaption class="mt-2 text-muted">Figure 1: Point allocations for Israel and Egypt.</figcaption>
+                </figure>
+                <table class="table table-bordered mt-3">
+                    <thead>
+                        <tr>
+                            <th>Issue</th>
+                            <th>Israel's Points</th>
+                            <th>Egypt's Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Sinai</td><td>35</td><td>51</td></tr>
+                        <tr><td>Diplomatic recognition</td><td>10</td><td>5</td></tr>
+                        <tr><td>West Bank/Gaza Strip</td><td>20</td><td>10</td></tr>
+                        <tr><td>Palestinian Political Recognition</td><td>10</td><td>5</td></tr>
+                        <tr><td>Palestinian rights</td><td>5</td><td>20</td></tr>
+                        <tr><td>Jerusalem</td><td>20</td><td>5</td></tr>
+                        <tr class="fw-bold"><td>Total</td><td>100</td><td>100</td></tr>
+                    </tbody>
+                </table>
+                <p>
+                    AW predicts each side ends up with 65.3% of their total points.
+                </p>
+            </section>
+
+            <section class="mt-4">
+                <h2>Actual Outcomes</h2>
+                <p>
+                    In reality, Egypt secured an acknowledgment of Palestinian rights:
+                    <a href="https://www.nytimes.com/1978/01/05/archives/new-jersey-pages-carter-and-sadat-ask-role-for-palestinians-in.html">Mr. Carter read</a>:
+                </p>
+                <blockquote class="blockquote">
+                    <p>"There must be a resolution of the Palestinian problem in all its aspects. [The solution of] the problem must be the legitimate rights of the Palestinian people and enable the Palestinians to participate in the determination of their own future."</p>
+                </blockquote>
+                <p>
+                    Egypt also regained control of the Sinai Peninsula, albeit under demilitarization overseen by <a href="https://en.wikipedia.org/wiki/Task_Force_Sinai">U.S. forces</a>. Israel received diplomatic recognition from Egypt, and while the treaty did not explicitly address Jerusalem, Brams & Taylor interpret remaining sovereign rights over the West Bank and Gaza as an Israeli gain.
+                </p>
+                <figure class="mb-4">
+                    <img src="/static/img/ResultsIP.png" alt="Results given" class="img-fluid rounded shadow">
+                    <figcaption class="mt-2 text-muted">Figure 2: AW division result versus actual treaty outcomes.</figcaption>
+                </figure>
+            </section>
+
+            <section class="mt-4">
+                <h2>LP Implementation</h2>
+                <p>
+                    We implemented a linear-programming approach matching the book's valuations and returned the same allocation as AW, confirming the equivalence of both methods in this two-party setting.
+                </p>
+            </section>
+
+            <section class="mt-4">
+                <h2>Conclusion</h2>
+                <p>
+                    While AW provides a clear numerical split, the real Camp David treaty reflects security, political, and process nuances that go beyond simple point allocations. Future work could extend AW to incorporate such conditional and procedural elements.
+                </p>
+            </section>
+
+        </article>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
