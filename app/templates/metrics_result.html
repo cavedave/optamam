@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Text Metrics</title>
+</head>
+<body>
+  <h1>Text Analysis Results</h1>
+  <ul>
+    {% for name, value in metrics.items() %}
+      <li><strong>{{ name }}:</strong> {{ value }}</li>
+    {% endfor %}
+  </ul>
+  <a href="/">Try another</a>
+</body>
+</html>
