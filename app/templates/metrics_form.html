@@ -4,10 +4,22 @@
   <title>Text Quality Analyzer</title>
 </head>
 <body>
-  <h1>Paste your text (under 10000 characters)</h1>
-  <form action="/analyze" method="post">
-    <textarea name="user_text" rows="10" cols="80" maxlength="10000" required></textarea><br><br>
-    <input type="submit" value="Analyze">
+  <h1>Text Quality Analyzer</h1>
+
+  <p>
+    Paste your text below (up to 10,000 characters) to analyze five key metrics:
+  </p>
+  <ul>
+    <li><strong>Word Count</strong></li>
+    <li><strong>Average Sentence Length</strong></li>
+    <li><strong>Stopword Ratio</strong></li>
+    <li><strong>Flesch Reading Ease Score</strong></li>
+    <li><strong>Repetition Ratio</strong></li>
+  </ul>
+
+  <form action="/metrics" method="post">
+    <textarea name="user_text" rows="12" cols="80" maxlength="10000" required></textarea><br><br>
+    <input type="submit" value="Analyze Text">
   </form>
 </body>
 </html>
