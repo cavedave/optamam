@@ -9,6 +9,7 @@ from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from collections import Counter
 import textstat
+import re
 
 app = FastAPI(title="Fair Division Calculator")
 
@@ -31,8 +32,27 @@ stop_words = set(stopwords.words("english"))
 async def metrics_form(request: Request):
     return templates.TemplateResponse("metrics_form.html", {"request": request})
 
+
+
 @app.post("/metrics", response_class=HTMLResponse)
 async def metrics_result(request: Request, user_text: str = Form(...)):
+    # --- Basic server-side checks ---
+    if len(user_text) > 10000:
+        return templates.TemplateResponse("metrics_form.html", {
+            "request": request,
+            "error": "Please keep your text under 10,000 characters."
+        })
+
+    if "<script" in user_text.lower() or "<?php" in user_text.lower():
+        return templates.TemplateResponse("metrics_form.html", {
+            "request": request,
+            "error": "Input appears to be code or unsafe HTML. Please enter normal text."
+        })
+
+    # --- Clean up control characters ---
+    user_text = re.sub(r"[\x00-\x1F\x7F]", "", user_text).strip()
+
+    # --- Continue with metrics analysis ---
     words = word_tokenize(user_text)
     sentences = sent_tokenize(user_text)
     word_count = len(words)
@@ -57,7 +77,6 @@ async def metrics_result(request: Request, user_text: str = Form(...)):
     }
 
     return templates.TemplateResponse("metrics_result.html", {"request": request, "metrics": metrics})
-
 
 
 
